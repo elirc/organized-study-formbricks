@@ -13,7 +13,7 @@ pnpm db:migrate:dev       # inferred — applies Prisma migrations (packages/dat
 pnpm go                   # inferred — db:up + all dev servers via turbo (or: pnpm dev)
 ```
 
-Open http://localhost:3000, create an account (locally, email verification is relaxed — check `apps/web/lib/constants.ts` for the env flags), create an organization, project, and your first survey.
+Open http://localhost:3000, create an account (locally, email verification is relaxed — the flags are read in `apps/web/lib/constants.ts`, which is **omitted from this study snapshot** by secret scanning — see `SECURITY_FILTERED_FILES.md` at the import root; in an upstream checkout it is there, and `apps/web/lib/env.ts` holds the validated env schema in both), create an organization, project, and your first survey.
 
 If something fails: check Docker is running, then check `.env` — the setup script `scripts/setup-dev-env.sh` (wired as `pnpm dev:setup`) generates one.
 

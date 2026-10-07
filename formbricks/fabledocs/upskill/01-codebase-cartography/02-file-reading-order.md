@@ -10,7 +10,7 @@ Thirty files, ordered so each read pays into the next. Per file: why, what to lo
 4. `packages/database/schema.prisma:582-745` — Environment, Project, Organization, Membership. Look for: the tenancy chain and `type` production/development on Environment. Skip field-level docs on first pass.
 5. `packages/database/schema.prisma:344-421` — Survey. Look for: how much lives in Json columns; `@@index([environmentId, updatedAt])`. 
 6. `packages/database/schema.prisma:158-190` — Response + Display (:239-262). Look for: `@@unique([surveyId, singleUseId])`, index comments.
-7. `apps/web/lib/constants.ts` — env-var surface. Look for: `CRON_SECRET`, `ENCRYPTION_KEY`, `WEBAPP_URL`, rate-limit flags. Skip the long tail.
+7. `apps/web/lib/constants.ts` — env-var surface (omitted from this study snapshot by the secret-scan filter — see `SECURITY_FILTERED_FILES.md` at the import root; read `apps/web/lib/env.ts` here instead, or the upstream repo). Look for: `CRON_SECRET`, `ENCRYPTION_KEY`, `WEBAPP_URL`, rate-limit flags. Skip the long tail.
 
 ## Stage B — The write path (everyone)
 

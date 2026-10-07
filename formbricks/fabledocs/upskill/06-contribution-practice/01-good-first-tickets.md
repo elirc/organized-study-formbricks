@@ -12,6 +12,7 @@ Story: As an operator, I want pipeline send failures to log `surveyId` and `even
 Anchors: `apps/web/app/lib/pipelines.ts:22-24` (bare error log); style reference `apps/web/app/api/(internal)/pipeline/route.ts:174-176`.
 Plan: change `.catch((error) => logger.error(error, "..."))` to include `{ surveyId, event, environmentId }` context object. Add/extend a colocated test asserting the logger call (mock `@formbricks/logger`).
 Could go wrong: logging the full `response` object (PII!) — log IDs only.
+**Check:** test with `vi.mock("@formbricks/logger")` and a rejecting `global.fetch`; assert `logger.error` received an object containing `surveyId`, `event`, `environmentId` and *no* `response` key.
 Review questions: does the logger's first-arg convention (object vs error) match house style?
 Rejection risk: low — pure observability win.
 Interview story potential: "I improved failure observability on an at-most-once event path" → leads into the outbox conversation.
@@ -20,20 +21,23 @@ Interview story potential: "I improved failure observability on an at-most-once 
 Difficulty: Easy — 1h. Skills: vitest, HTTP headers.
 Anchors: `apps/web/app/api/v2/client/[environmentId]/responses/route.ts:37-41`.
 Plan: the function isn't exported — either test through the route or export it; prefer exporting a pure helper into `lib/` matching neighbors. Cases: CF wins over Vercel; CloudFront fallback; none → undefined.
+**Check:** three assertions minimum — CF beats Vercel when both present; CloudFront used only when the other two are absent; no headers → `undefined` (not `""`: note `||` means an empty `CF-IPCountry` header also falls through).
 Rejection risk: refactor-for-testability must stay tiny or it becomes a drive-by.
 Interview story: "testing pure logic extracted from a route handler."
 
 ## Ticket 3: Document the pipeline contract
 Difficulty: Easy — 2h. Skills: technical writing, types-as-docs.
 Anchors: `apps/web/app/lib/pipelines.ts`, `apps/web/app/api/(internal)/pipeline/types/pipelines.ts` (ZPipelineInput).
-Plan: JSDoc on `sendToPipeline` stating: delivery is at-most-once, auth is CRON_SECRET, dates serialize to strings (consumer re-hydrates, `pipeline/route.ts:39-42`). No behavior change.
+Plan: JSDoc on `sendToPipeline` stating: delivery is at-most-once, auth is CRON_SECRET, dates serialize to strings (consumer re-hydrates, `pipeline/route.ts:39-42`), and a missing `CRON_SECRET` *rejects* the returned promise (`pipelines.ts:6-8`) rather than being logged by the `.catch`. No behavior change.
+**Check:** every sentence of the JSDoc maps to a line number you cite in the PR body; a reviewer reading only `pipelines.ts` + `pipeline/route.ts:31-50` can confirm each claim.
 Rejection risk: low; docs PRs need to be *accurate* — cite lines in the PR body.
 Interview story: "I documented an implicit contract I had to reverse-engineer."
 
 ## Ticket 4: Return `Retry-After` header on rate-limited storage uploads
 Difficulty: Medium — 3h. Skills: HTTP semantics, wrapper code.
-Anchors: `apps/web/modules/core/rate-limit/rate-limit.ts:83-86` (retryAfter already computed); `apps/web/app/lib/api/with-api-logging.ts` (where 429s are built — verify exact spot before starting).
+Anchors: `apps/web/modules/core/rate-limit/rate-limit.ts:83-86` (retryAfter already computed); `apps/web/modules/core/rate-limit/helpers.ts:40-45` (`applyRateLimit` carries it on `TooManyRequestsError`); `apps/web/app/lib/api/with-api-logging.ts:302-303` + `apps/web/app/lib/api/response.ts:282` (the v1 429 path the storage route uses via `customRateLimitConfig`, `storage/route.ts:112`). **Reference implementation already exists:** v3 sets the header in `apps/web/app/api/v3/lib/response.ts:125-128` from `api-wrapper.ts:295` — copy that shape rather than inventing one.
 Plan: thread `retryAfter` into the 429 response as a standard header. Test: simulate limit exceeded, assert header.
+**Check:** a colocated test that mocks `checkRateLimit` to return `{ allowed: false, retryAfter: 42 }` and asserts the v1 response has `status === 429` and `Retry-After: "42"`; a second case where Redis is down (fail-open) asserts *no* 429 at all.
 Could go wrong: v1/v2/v3 wrappers differ — scope to one wrapper and say so in the PR.
 Interview story: "small API-correctness fix touching a cross-cutting wrapper safely."
 

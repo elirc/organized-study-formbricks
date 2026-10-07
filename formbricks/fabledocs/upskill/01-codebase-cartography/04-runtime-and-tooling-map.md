@@ -40,7 +40,7 @@ The ones that gate PRs: `pr.yml`, `test.yml`, `lint.yml`, `e2e.yml`, `translatio
 
 ## Environment variables (high level, no secrets)
 
-Central registry: `apps/web/lib/constants.ts` + validated env in `apps/web/lib/env.ts` (t3-env style — look for the schema). Load-bearing ones you'll meet in this curriculum: `DATABASE_URL`, `REDIS_URL` (cache + rate limiting; absent = fail-open), `CRON_SECRET` (pipeline auth), `ENCRYPTION_KEY` (single-use links, 2FA backup codes), `WEBAPP_URL`, `RATE_LIMITING_DISABLED`, `DANGEROUSLY_ALLOW_WEBHOOK_INTERNAL_URLS` (SSRF escape hatch), S3 credentials for storage, `SENTRY_DSN`, `POSTHOG_KEY`.
+Central registry: `apps/web/lib/constants.ts` (not present in this snapshot — filtered by secret scanning, see `SECURITY_FILTERED_FILES.md`; every importer still references `@/lib/constants`) + validated env in `apps/web/lib/env.ts` (t3-env style — look for the schema). Load-bearing ones you'll meet in this curriculum: `DATABASE_URL`, `REDIS_URL` (cache + rate limiting; absent = fail-open), `CRON_SECRET` (pipeline auth), `ENCRYPTION_KEY` (single-use links, 2FA backup codes), `WEBAPP_URL`, `RATE_LIMITING_DISABLED`, `DANGEROUSLY_ALLOW_WEBHOOK_INTERNAL_URLS` (SSRF escape hatch), S3 credentials for storage, `SENTRY_DSN`, `POSTHOG_KEY`.
 
 Interview angle: "walk me through your project's toolchain" is a real screen question. A mid-level answer names the tools; a senior answer names the *couplings*: turbo cache vs copied bundles, pnpm script-blocking as supply-chain defense, fail-open behaviors tied to `REDIS_URL`, and PR-size checks as a review-culture signal.
 

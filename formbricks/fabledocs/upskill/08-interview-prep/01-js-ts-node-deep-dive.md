@@ -8,7 +8,7 @@ What it's really testing: event loop + microtasks + the consequences of dangling
 Repo anchor: `apps/web/app/api/v2/client/[environmentId]/responses/route.ts:245-259` — `sendToPipeline(...)` called without `await` after the DB transaction.
 Junior answer sounds like: "await pauses until the promise resolves."
 Mid-level answer adds: awaiting suspends *this* handler (the thread keeps serving others); here the code skips `await` so the client gets its 200 before webhook fan-out — trading latency for delivery certainty.
-Senior answer includes: the failure mode — in serverless, the runtime may freeze after the response, so unawaited work can silently die; unhandled rejections are only survivable because `sendToPipeline` ends in `.catch` (`app/lib/pipelines.ts:22-24`); the principled fix is an outbox, not `void promise`.
+Senior answer includes: the failure mode — in serverless, the runtime may freeze after the response, so unawaited work can silently die; fetch failures are contained only because `sendToPipeline` ends in `.catch` (`app/lib/pipelines.ts:22-24`) — and that `.catch` does *not* cover the `throw new Error("CRON_SECRET is not set")` at `:6-8`, which in an unawaited `async` function becomes an unhandled rejection (point this out unprompted); the principled fix is an outbox, not `void promise`.
 Likely follow-ups: "What's the difference between microtask and macrotask here?" "What does Node do with an unhandled rejection?"
 Practice drill: trace what the pipeline call's failure looks like in logs vs what the user sees.
 

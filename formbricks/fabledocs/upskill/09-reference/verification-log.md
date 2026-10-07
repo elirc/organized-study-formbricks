@@ -66,3 +66,16 @@ Running record of what was inspected while authoring this curriculum. Date: 2026
 - Not covered in depth: `packages/ai`, `apps/storybook`, Storybook/Chromatic CI, helm charts, `apps/web/modules/ee/sso` internals, `apps/web/vendor`, lingodotdev i18n pipeline internals, `docs/` site content, `charts/`.
 - Pre-existing learning material exists in `docs/` (`architectural-cartographer/`, `mission-learning-path/`, `user-story-build-path/`, `junior-dev-onboarding-user-stories.md`). Untouched and not relied upon.
 - Line numbers checked against the working tree on 2026-07-11; they will drift as the repo changes — search for symbols if an anchor misses.
+
+## Second pass — 2026-10-07 (study-snapshot import `organized-study-formbricks`)
+
+Read-only re-check against the imported snapshot. No installs, builds or tests run.
+
+- Re-checked anchors that the curriculum leans on hardest: `responses/route.ts` (37-41, 204-278, 245-259), `responses/lib/utils.ts:13-40`, `responses/lib/response.ts:21-44`, `pipelines.ts` (whole file), `pipeline/route.ts` (31-36, 82-93, 96-182, 273-317), `environmentState.ts:66-70`, `environment/route.ts:58-76`, `rate-limit.ts:24-34, 80-86, 110-135`, `schema.prisma:184-188, 344`, `survey-editor.tsx:86-90`, `quotas/lib/utils.ts:135-140`, `authOptions.ts:221-307`. All still land on the described code; `wc -l` counts are one lower than the "N lines" above only because the files end without a trailing newline.
+- **Snapshot gap:** `apps/web/lib/constants.ts` is absent from this import (listed in the root `SECURITY_FILTERED_FILES.md`, along with several test files). Docs that point at it now say so.
+- **Drift corrected:** "the `.catch` makes unawaited `sendToPipeline` survivable" was incomplete — the `CRON_SECRET` guard at `pipelines.ts:6-8` throws before the `.catch` exists (register R14).
+- **Hypothesis resolved:** `withCache` has no single-flight (`packages/cache/src/service.ts:241-261`) — R11 raised to High (shape).
+- **New finding:** backup-code burn is an unconditioned read-modify-write (`authOptions.ts:280-306`) — register R13.
+- **Ticket 4 drift:** v3 already emits `Retry-After` (`apps/web/app/api/v3/lib/response.ts:125-128`); the ticket now points at it as the reference.
+- Re-confirmed by grep: no `cache.del` on environment-state keys anywhere in `apps/web/lib`, `apps/web/modules`, `packages/cache/src` (only billing, license and SAML keys are deleted) — R4 stands.
+

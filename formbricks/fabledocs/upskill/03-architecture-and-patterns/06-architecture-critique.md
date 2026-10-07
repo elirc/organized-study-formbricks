@@ -27,6 +27,10 @@ An honest assessment: strongest choices, real risks, and a prioritized "if I own
 
 **R7 — The pipeline route is a 348-line monolith** doing webhooks + integrations + emails + follow-ups + billing + analytics + survey state. Every new side effect lands here; testability degrades (its lib/ pieces are tested, the orchestration isn't). Refactor seam, not incident.
 
+**R8 — Read-modify-write on secrets (backup codes).** `authOptions.ts:280-306` decrypts the whole backup-code array, nulls one entry, re-encrypts, and writes with `where: { id }` only. Two concurrent logins can both spend the same code, and two concurrent spends of *different* codes can resurrect one of them (last writer wins with a stale array). Low exploitability, but it is the same check-then-act shape as R2 sitting inside the auth path — a good interview example of "the hardened function still has a concurrency hole." Register: R13.
+
+**R9 — Misconfiguration path in the pipeline producer.** `pipelines.ts:6-8` throws for a missing `CRON_SECRET` inside an `async` function whose callers never await it, so the `.catch` at `:22-24` never sees it — every submission produces an unhandled rejection while still returning 200. Fix is boot-time validation, not a try/catch at each call site. Register: R14.
+
 ## "Owning this for 3 months" — the plan
 
 Month 1 (make the invisible visible, zero behavior change): metrics/alerts on pipeline send failures, webhook delivery outcomes, rate-limiter fail-open activations, Redis health in /health (Ticket 17); write the API deprecation policy; concurrency cap (p-limit) on webhook fan-out (R6, tiny diff).
@@ -37,6 +41,6 @@ Explicitly *not* doing: microservices, GraphQL rewrite, replacing Json survey do
 
 ## Confirmed vs hypothesis ledger
 
-Confirmed by reading: R1, R3, R4 (absence), R5, R7, all strengths. Hypotheses needing a test before acting: R2 overshoot magnitude, R6 pressure threshold, cache-stampede behavior of `withCache` (does it single-flight? read `service.ts:241+` before claiming).
+Confirmed by reading: R1, R3, R4 (absence), R5, R7, all strengths. Confirmed on re-read (2026-10-07): `withCache` (`packages/cache/src/service.ts:241-261`) is plain cache-aside with no single-flight, so the stampede shape is real (register R11); R8/R9 above. Hypotheses needing a test before acting: R2 overshoot magnitude, R6 pressure threshold, R11 stampede cost at real traffic.
 
 Interview use: pick R1 or R2, present as *finding → evidence → impact → fix → migration → test*. That six-beat structure is what "senior" sounds like in a system-design or code-review round.
